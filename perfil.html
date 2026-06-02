@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Perfil - Gestión de Torneos</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div class="main-layout">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <img src="img/tl_letters.png" alt="TROYAN LEGACY" class="sidebar-logo">
+        </div>
+        <nav>
+            <ul class="sidebar-nav">
+                <li><a href="dashboard.html">📊 Dashboard</a></li>
+                <li><a href="torneos.html">🏅 Torneos</a></li>
+                <li><a href="equipos.html">👥 Equipos</a></li>
+                <li><a href="calendario.html">📅 Calendario</a></li>
+                <li><a href="resultados.html">📈 Resultados</a></li>
+                <li><a href="perfil.html">👤 Mi Perfil</a></li>
+                <li id="adminLink" class="hidden-element" style="display:none;"><a href="admin.html">⚙️ Administración</a></li>
+                <li><a href="ayuda-logueado.html">❓ Centro de Ayuda</a></li>
+            </ul>
+        </nav>
+        <div class="user-info">
+            <p id="userName" class="user-name-text"></p>
+            <p id="userRole" class="user-role-text"></p>
+            
+            <!-- EL BOTÓN DEL TEMA -->
+            <button id="themeToggleBtn" onclick="app.toggleTheme()" class="theme-toggle-btn">
+                ☀️ Modo Claro
+            </button>
+            
+            <button class="logout-btn" onclick="app.logout()">Cerrar Sesión</button>
+        </div>
+    </aside>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>Mi Perfil</h1>
+        </div>
+
+        <div class="content">
+            <div id="alert" class="alert"></div>
+
+            <div class="profile-columns">
+                <div class="profile-column">
+                    <div class="card">
+                        <h3>Información Personal</h3>
+                        <form id="profileForm">
+                            <div class="form-group">
+                                <label>Nombre Completo</label>
+                                <input type="text" id="profileName" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Correo Institucional</label>
+                                <input type="email" id="profileEmail" disabled>
+                            </div>
+                            <div class="form-group">
+                                <label>Rol</label>
+                                <input type="text" id="profileRole" disabled>
+                            </div>
+                            <div class="form-group">
+                                <label>Fecha de Registro</label>
+                                <input type="text" id="profileCreatedAt" disabled>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Actualizar Perfil</button>
+                        </form>
+                    </div>
+
+                    <div class="card">
+                        <h3>Cambiar Contraseña</h3>
+                        <form id="passwordForm">
+                            <div class="form-group">
+                                <label>Contraseña Actual</label>
+                                <input type="password" id="currentPassword" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Nueva Contraseña</label>
+                                <input type="password" id="newPassword" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Confirmar Nueva Contraseña</label>
+                                <input type="password" id="confirmPassword" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Cambiar Contraseña</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="profile-column">
+                    <div class="mt-4">
+                        <h3 class="text-blue">🛡️ Mis Equipos</h3>
+                        <div id="myTeamsContainer">
+                            <p class="empty-table-msg">Cargando mis equipos...</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <h3 class="text-orange">🏆 Torneos en los que Participo</h3>
+                        <div id="myTournamentsContainer">
+                            <p class="empty-table-msg">Cargando mis torneos...</p>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>Tus Próximos Partidos</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Torneo</th>
+                                    <th>Equipo Local</th>
+                                    <th>Equipo Visitante</th>
+                                    <th>Fecha y Hora</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="userMatchesTable">
+                                <tr>
+                                    <td colspan="5" class="empty-table-msg">Cargando partidos...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+    if (!app.checkAuth()) return;
+    
+    const currentUser = app.currentUser;
+    if (currentUser) {
+        if (app.isAdmin()) document.getElementById('adminLink').style.display = 'block';
+        loadProfileData(currentUser);
+        await fetchUserData(currentUser.id);
+    }
+
+    app.initializeNavigation();
+    loadMyProfileTeams();
+    
+    document.getElementById('profileForm').addEventListener('submit', updateProfile);
+    document.getElementById('passwordForm').addEventListener('submit', changePassword);
+});
+
+function loadProfileData(user) {
+    document.getElementById('profileName').value = user.name || user.first_name || user.username;
+    document.getElementById('profileEmail').value = user.email;
+    document.getElementById('profileRole').value = translateRole(user.role || 'usuario');
+    document.getElementById('profileCreatedAt').value = app.formatDate(user.date_joined || new Date().toISOString());
+}
+
+function translateRole(role) {
+    const roles = { 'administrador': 'Administrador', 'organizador': 'Organizador', 'capitan': 'Capitán', 'usuario': 'Usuario / Espectador' };
+    return roles[role] || role;
+}
+
+async function updateProfile(e) {
+    e.preventDefault();
+    app.showAlert('Funcionalidad en desarrollo para conectarse al servidor', 'warning');
+}
+
+async function changePassword(e) {
+    e.preventDefault();
+    app.showAlert('Funcionalidad en desarrollo para conectarse al servidor', 'warning');
+}
+
+async function fetchUserData(userId) {
+    try {
+        const [teams, tournaments, matches] = await Promise.all([
+            app.fetchAPI('/teams/'),
+            app.fetchAPI('/tournaments/'),
+            app.fetchAPI('/matches/')
+        ]);
+
+        const userTeams = teams.filter(t => 
+            t.captain === userId || t.captain_id === userId || (t.members && t.members.includes(userId))
+        );
+        const userTeamIds = userTeams.map(t => t.id);
+
+        renderUserMatches(matches, userTeamIds, tournaments, teams);
+    } catch (error) {
+        console.error("Error al cargar datos del perfil", error);
+    }
+}
+
+function renderUserMatches(matches, teamIds, tournaments, teams) {
+    const tbody = document.getElementById('userMatchesTable');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    
+    const uMatches = matches.filter(m => {
+        const homeId = m.homeTeam || m.homeTeam_id;
+        const awayId = m.awayTeam || m.awayTeam_id;
+        return m.status === 'scheduled' && (teamIds.includes(homeId) || teamIds.includes(awayId));
+    });
+    
+    if (uMatches.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-table-msg">No hay partidos próximos programados</td></tr>';
+        return;
+    }
+
+    uMatches.forEach(m => {
+        const t = tournaments.find(x => x.id === (m.tournament || m.tournament_id));
+        const ht = teams.find(x => x.id === (m.homeTeam || m.homeTeam_id));
+        const at = teams.find(x => x.id === (m.awayTeam || m.awayTeam_id));
+        
+        const fechaCompleta = new Date(`${m.date}T${m.time || '00:00:00'}`);
+        const dateStr = fechaCompleta.toLocaleDateString() + ' ' + fechaCompleta.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+        tbody.innerHTML += `
+            <tr>
+                <td class="text-orange"><strong>${t ? t.name : 'Desc'}</strong></td>
+                <td class="text-blue">${ht ? ht.name : 'Desc'}</td>
+                <td>${at ? at.name : 'Desc'}</td>
+                <td>${dateStr}</td>
+                <td><span class="btn-sm" style="background:#3b82f6; color:white; border-radius:12px; padding:2px 8px;">Programado</span></td>
+            </tr>`;
+    });
+}
+
+async function loadMyProfileTeams() {
+    const currentUser = app.currentUser;
+    if (!currentUser) return;
+    try {
+        const [allTeams, allTournaments] = await Promise.all([app.fetchAPI('/teams/'), app.fetchAPI('/tournaments/')]);
+        const misEquipos = allTeams.filter(team => team.captain === currentUser.id || team.captain_id === currentUser.id || (team.members && team.members.includes(currentUser.id)));
+        const misEquiposIds = misEquipos.map(team => team.id);
+        const misTorneos = allTournaments.filter(tournament => tournament.teams && tournament.teams.some(teamId => misEquiposIds.includes(teamId)));
+
+        const teamsContainer = document.getElementById('myTeamsContainer'); 
+        if (teamsContainer) {
+            if (misEquipos.length === 0) {
+                teamsContainer.innerHTML = '<p class="empty-table-msg">Aún no estás inscrito en ningún equipo.</p>';
+            } else {
+                let htmlTeams = '<div class="teams-grid">';
+                misEquipos.forEach(team => {
+                    const torneo = allTournaments.find(t => t.teams && t.teams.includes(team.id));
+                    const rol = (team.captain === currentUser.id || team.captain_id === currentUser.id) ? '👑 Capitán' : '🏃 Jugador';
+                    htmlTeams += `
+                    <div class="profile-team-card">
+                        <h4 class="profile-card-title">${team.name}</h4>
+                        <p class="profile-text-muted"><strong>Torneo:</strong> ${torneo ? torneo.name : 'Sin asignar'}</p>
+                        <p class="profile-text-highlight"><strong>Mi Rol:</strong> ${rol}</p>
+                    </div>`;
+                });
+                teamsContainer.innerHTML = htmlTeams + '</div>';
+            }
+        }
+
+        const tournamentsContainer = document.getElementById('myTournamentsContainer');
+        if (tournamentsContainer) {
+            if (misTorneos.length === 0) {
+                tournamentsContainer.innerHTML = '<p class="empty-table-msg">Aún no participas en ningún torneo.</p>';
+            } else {
+                let htmlTournaments = '<div class="teams-grid">';
+                misTorneos.forEach(torneo => {
+                    const miEquipoAqui = misEquipos.find(team => torneo.teams.includes(team.id));
+                    htmlTournaments += `
+                    <div class="profile-tournament-card">
+                        <h4 class="profile-card-title">${torneo.name}</h4>
+                        <p class="profile-text-muted"><strong>Participando con:</strong> 🛡️ ${miEquipoAqui ? miEquipoAqui.name : 'Desconocido'}</p>
+                    </div>`;
+                });
+                tournamentsContainer.innerHTML = htmlTournaments + '</div>';
+            }
+        }
+    } catch (error) {
+        console.error("Error al cargar datos:", error);
+    }
+}
+</script>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="footer-content">
+        <a href="terminos.html" class="footer-link">Términos y Condiciones</a>
+        <span class="footer-separator">|</span>
+        <a href="privacidad.html" class="footer-link">Privacidad</a>
+        <span class="footer-separator">|</span>
+        <a href="ayuda-logueado.html" class="footer-link">Soporte</a>
+        <span class="footer-separator">|</span>
+        <span class="footer-text">Copyright</span>
+        <span class="footer-separator">|</span>
+        <a href="index.html" class="footer-link">Troyan Legacy</a>
+    </div>
+</footer>
+
+</body>
+</html>

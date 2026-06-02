@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendario - Gestión de Torneos</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div class="main-layout">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <img src="img/tl_letters.png" alt="TROYAN LEGACY" class="sidebar-logo">
+        </div>
+        <nav>
+            <ul class="sidebar-nav">
+                <li><a href="dashboard.html">📊 Dashboard</a></li>
+                <li><a href="torneos.html">🏅 Torneos</a></li>
+                <li><a href="equipos.html">👥 Equipos</a></li>
+                <li><a href="calendario.html">📅 Calendario</a></li>
+                <li><a href="resultados.html">📈 Resultados</a></li>
+                <li><a href="perfil.html">👤 Mi Perfil</a></li>
+                <li id="adminLink" style="display:none;"><a href="admin.html">⚙️ Administración</a></li>
+                <li><a href="ayuda-logueado.html">❓ Centro de Ayuda</a></li>
+            </ul>
+        </nav>
+        <div class="user-info">
+            <p id="userName" style="margin-bottom: 5px;"></p>
+            <p id="userRole" style="font-size: 11px; color: #38bdf8;"></p>
+            
+            <!-- EL BOTÓN DEL TEMA -->
+            <button id="themeToggleBtn" onclick="app.toggleTheme()" style="width: 100%; padding: 8px; margin-bottom: 10px; margin-top: 10px; background: transparent; border: 1px solid #38bdf8; color: #38bdf8; border-radius: 5px; cursor: pointer; font-weight: bold; transition: all 0.3s;">
+                ☀️ Modo Claro
+            </button>
+            
+            <button class="logout-btn" onclick="app.logout()">Cerrar Sesión</button>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+        <div class="header">
+            <h1>Calendario de Partidos</h1>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <button id="createMatchBtn" class="btn btn-success btn-sm" style="display:none;">+ Crear Partido</button>
+            </div>
+        </div>
+
+        <div class="content">
+            <div id="alert" class="alert"></div>
+
+            <!-- FILTROS -->
+            <div class="card">
+                <form id="filterForm">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="form-group">
+                            <label>Filtrar por Torneo</label>
+                            <select id="filterTournament" onchange="filterMatches()">
+                                <option value="">Todos los torneos</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Filtrar por Estado</label>
+                            <select id="filterStatus" onchange="filterMatches()">
+                                <option value="">Todos los estados</option>
+                                <option value="scheduled">Programado</option>
+                                <option value="played">Jugado</option>
+                                <option value="cancelled">Cancelado</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- TABLA DE PARTIDOS -->
+            <table>
+                <thead>
+                    <tr>
+                        <th>Torneo</th>
+                        <th>Equipo Local</th>
+                        <th>Equipo Visitante</th>
+                        <th>Fecha y Hora</th>
+                        <th>Ubicación</th>
+                        <th>Estado</th>
+                        <th>Resultado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="matchesTableBody">
+                    <tr>
+                        <td colspan="8" style="text-align: center; color: #cbd5e1;">Cargando partidos...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CREAR/EDITAR PARTIDO -->
+<div id="matchModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="modalTitle">Crear Partido</h2>
+            <button type="button" class="modal-close" onclick="app.closeModal('matchModal')">&times;</button>
+        </div>
+        <form id="matchForm">
+            <div class="form-columns">
+                <div class="form-column">
+                    <div class="form-group">
+                        <label>Torneo</label>
+                        <select id="matchTournament" required>
+                            <option value="">Selecciona un torneo</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label>Equipo Local:</label>
+                        <select id="matchLocalTeam" class="form-control" required></select>
+                    </div>
+                    <div class="mb-3">
+                        <label>Equipo Visitante:</label>
+                        <select id="matchAwayTeam" class="form-control" required></select>
+                    </div>
+                </div>
+                <div class="form-column">
+                    <div class="form-group">
+                        <label>Fecha</label>
+                        <input type="date" id="matchDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Hora</label>
+                        <input type="time" id="matchTime" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Ubicación</label>
+                        <input type="text" id="matchLocation" required>
+                    </div>
+                </div>
+            </div>
+            <div class="btn-group">
+                <button type="submit" class="btn btn-primary">Guardar</button>
+                <button type="button" class="btn btn-secondary" onclick="app.closeModal('matchModal')">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+let allMatchesData = []; // Aquí guardaremos los partidos para los filtros
+
+document.addEventListener('DOMContentLoaded', async function() {
+    if (!app.checkAuth()) return;
+    app.initializeNavigation();
+
+    // 1. Verificamos si eres organizador para mostrar el botón
+    await checkOrganizerStatus();
+
+    // 2. Cargamos la tabla del calendario
+    await loadCalendarMatches();
+
+    // 3. Event Listeners
+    const createBtn = document.getElementById('createMatchBtn');
+    if (createBtn) {
+        createBtn.addEventListener('click', () => {
+            editingMatchId = null; // Limpiamos el modo edición
+            document.getElementById('modalTitle').textContent = 'Crear Partido';
+            document.getElementById('matchForm').reset();
+            loadMatchFormOptions(); 
+            app.showModal('matchModal');
+        });
+    }
+
+    const matchForm = document.getElementById('matchForm');
+    if (matchForm) matchForm.addEventListener('submit', saveMatch);
+
+    // Si tienes inputs de filtro en tu HTML con estos IDs, esto los hace funcionar:
+    const filterSport = document.getElementById('filterSport');
+    const filterTournament = document.getElementById('filterTournament');
+    if (filterSport) filterSport.addEventListener('input', applyCalendarFilters);
+    if (filterTournament) filterTournament.addEventListener('input', applyCalendarFilters);
+});
+
+// ================== SEGURIDAD Y ROLES ==================
+async function checkOrganizerStatus() {
+    const currentUser = app.currentUser;
+    const createBtn = document.getElementById('createMatchBtn');
+    if (!currentUser || !createBtn) return;
+
+    if (app.isAdmin()) {
+        createBtn.style.display = 'inline-block';
+        return;
+    }
+
+    try {
+        const tournaments = await app.fetchAPI('/tournaments/');
+        // ¿El usuario es dueño de al menos un torneo?
+        const isOrganizer = tournaments.some(t => t.organizer === currentUser.id || t.organizer_id === currentUser.id);
+        
+        if (isOrganizer) {
+            createBtn.style.display = 'inline-block';
+        }
+    } catch (error) {
+        console.error("Error verificando rol:", error);
+    }
+}
+// Variables globales temporales para no tener que consultar a la base de datos cada vez que cambias de torneo
+let globalTeams = [];
+let globalTournaments = [];
+
+async function loadMatchFormOptions() {
+    try {
+        console.log("1. Iniciando carga de opciones para el formulario...");
+        
+        const currentUser = app.currentUser;
+        if (!currentUser) throw new Error("No se detectó un usuario activo");
+
+        console.log("2. Descargando datos de Django...");
+        const [tournaments, teams] = await Promise.all([
+            app.fetchAPI('/tournaments/'),
+            app.fetchAPI('/teams/')
+        ]);
+        
+        console.log("3. Datos recibidos. Torneos:", tournaments.length, "| Equipos:", teams.length);
+
+        // Guardamos los datos para usarlos en el filtro rápido
+        globalTournaments = tournaments;
+        globalTeams = teams;
+
+        console.log("4. Filtrando torneos para el usuario ID:", currentUser.id);
+        const myTournaments = (typeof app.isAdmin === 'function' && app.isAdmin()) 
+            ? tournaments 
+            : tournaments.filter(t => t.organizer === currentUser.id || t.organizer_id === currentUser.id);
+
+        console.log("5. Torneos permitidos para este usuario:", myTournaments.length);
+
+        const tournamentSelect = document.getElementById('matchTournament');
+        const localSelect = document.getElementById('matchLocalTeam');
+        const awaySelect = document.getElementById('matchAwayTeam');
+
+        if (tournamentSelect) {
+            tournamentSelect.innerHTML = '<option value="">Selecciona tu torneo...</option>' + 
+                myTournaments.map(t => `<option value="${t.id}">${t.name} (${t.sport})</option>`).join('');
+            
+            // --- AQUÍ ESTÁ EL ESCUDO ACTIVADO ---
+            if (localSelect && awaySelect) {
+                localSelect.innerHTML = '<option value="">Primero selecciona un torneo...</option>';
+                awaySelect.innerHTML = '<option value="">Primero selecciona un torneo...</option>';
+                localSelect.disabled = true;
+                awaySelect.disabled = true;
+            } else {
+                console.warn("⚠️ Ojo: No encontré los selectores de equipos en el HTML. Revisa tus IDs.");
+            }
+            // ------------------------------------
+
+            // Escuchador de eventos
+            tournamentSelect.removeEventListener('change', updateTeamDropdowns);
+            tournamentSelect.addEventListener('change', updateTeamDropdowns);
+            console.log("6. ¡Formulario inicializado con éxito!");
+        } else {
+            throw new Error("No se encontró el elemento 'matchTournament' en el HTML");
+        }
+
+    } catch (error) {
+        console.error("🔴 ERROR DETALLADO AL CARGAR OPCIONES:", error);
+        app.showAlert('Error al cargar la lista de opciones. Revisa la consola (F12).', 'danger');
+    }
+}
+
+// Esta es la función que hace la magia de filtrar
+function updateTeamDropdowns(e) {
+    const selectedTournamentId = parseInt(e.target.value);
+    const localSelect = document.getElementById('matchLocalTeam');
+    const awaySelect = document.getElementById('matchAwayTeam');
+
+    // Si el usuario regresa a la opción "Selecciona tu torneo..."
+    if (!selectedTournamentId) {
+        localSelect.innerHTML = '<option value="">Primero selecciona un torneo...</option>';
+        awaySelect.innerHTML = '<option value="">Primero selecciona un torneo...</option>';
+        localSelect.disabled = true;
+        awaySelect.disabled = true;
+        return;
+    }
+
+    // Buscamos el torneo seleccionado en nuestra lista global
+    const selectedTournament = globalTournaments.find(t => t.id === selectedTournamentId);
+    
+    // Filtramos TODOS los equipos, dejando solo los que están en este torneo específico
+    const tournamentTeams = globalTeams.filter(team => {
+        return selectedTournament && selectedTournament.teams && selectedTournament.teams.includes(team.id);
+    });
+
+    // Si el torneo es nuevo y no tiene equipos inscritos
+    if (tournamentTeams.length === 0) {
+        const emptyOption = '<option value="">No hay equipos inscritos en este torneo</option>';
+        localSelect.innerHTML = emptyOption;
+        awaySelect.innerHTML = emptyOption;
+        localSelect.disabled = true;
+        awaySelect.disabled = true;
+        return;
+    }
+
+    // Si todo está bien, construimos las opciones con los equipos correctos
+    const teamOptions = '<option value="">Selecciona un equipo...</option>' + 
+        tournamentTeams.map(t => `<option value="${t.id}">🛡️ ${t.name}</option>`).join('');
+
+    localSelect.innerHTML = teamOptions;
+    awaySelect.innerHTML = teamOptions;
+    
+    // ¡Encendemos los selectores!
+    localSelect.disabled = false;
+    awaySelect.disabled = false;
+}
+
+async function saveMatch(e) {
+    e.preventDefault();
+    
+    const data = {
+        tournament: parseInt(document.getElementById('matchTournament').value),
+        homeTeam: parseInt(document.getElementById('matchLocalTeam').value),
+        awayTeam: parseInt(document.getElementById('matchAwayTeam').value),
+        date: document.getElementById('matchDate').value,
+        time: document.getElementById('matchTime').value,
+        location: document.getElementById('matchLocation').value,
+        status: 'scheduled'
+    };
+
+    if (data.homeTeam === data.awayTeam) {
+        return app.showAlert('El equipo local y visitante no pueden ser el mismo', 'warning');
+    }
+
+    try {
+        // ¿Estamos editando o creando?
+        const method = editingMatchId ? 'PUT' : 'POST';
+        const url = editingMatchId ? `/matches/${editingMatchId}/` : '/matches/';
+
+        await app.fetchAPI(url, {
+            method: method,
+            body: JSON.stringify(data)
+        });
+        
+        app.showAlert(editingMatchId ? 'Partido actualizado' : 'Partido programado exitosamente', 'success');
+        app.closeModal('matchModal');
+        editingMatchId = null; // Apagamos el modo edición
+        loadCalendarMatches(); 
+    } catch (error) {
+        console.error("Error al guardar:", error);
+        app.showAlert('Error al procesar el partido', 'danger');
+    }
+}
+
+// 1. CARGAMOS LOS PARTIDOS Y VERIFICAMOS PERMISOS
+async function loadCalendarMatches() {
+    try {
+        const currentUser = app.currentUser; // Necesitamos saber quién está logueado
+        
+        const [matches, tournaments, teams] = await Promise.all([
+            app.fetchAPI('/matches/'),
+            app.fetchAPI('/tournaments/'),
+            app.fetchAPI('/teams/')
+        ]);
+
+        allMatchesData = matches.map(match => {
+            const torneo = tournaments.find(t => t.id === match.tournament || t.id === match.tournament_id);
+            const local = teams.find(t => t.id === match.homeTeam || t.id === match.homeTeam_id);
+            const visitante = teams.find(t => t.id === match.awayTeam || t.id === match.awayTeam_id);
+
+            const fechaCompleta = `${match.date}T${match.time || '00:00:00'}`;
+            
+            // VERIFICACIÓN DE PODER: ¿El usuario actual es el organizador de este torneo?
+            const isOrganizer = currentUser && torneo && (torneo.organizer === currentUser.id || torneo.organizer_id === currentUser.id);
+            const canDelete = app.isAdmin() || isOrganizer;
+
+            return {
+                ...match,
+                fullDateTimeObj: new Date(fechaCompleta),
+                tournamentName: torneo ? torneo.name : 'Desconocido',
+                sport: torneo ? torneo.sport : 'N/A',
+                localName: local ? local.name : 'Por definir',
+                awayName: visitante ? visitante.name : 'Por definir',
+                canDelete: canDelete // Guardamos el permiso en el partido
+            };
+        });
+
+        allMatchesData.sort((a, b) => a.fullDateTimeObj - b.fullDateTimeObj);
+        renderMatches(allMatchesData);
+
+    } catch (error) {
+        console.error("Error al cargar el calendario:", error);
+    }
+}
+
+// 2. DIBUJAMOS LA TABLA CON EL BOTÓN DE ELIMINAR
+function renderMatches(matches) {
+    const tbody = document.getElementById('matchesTableBody'); 
+    if (!tbody) return;
+
+    if (matches.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #94a3b8; padding: 20px;">No hay partidos programados</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = matches.map(m => {
+        const dateStr = m.fullDateTimeObj.toLocaleDateString() + ' ' + m.fullDateTimeObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        const resultado = (m.homeScore !== null && m.awayScore !== null) ? `${m.homeScore} - ${m.awayScore}` : '-';
+
+        let estadoBadge = '';
+        if (m.status === 'scheduled') estadoBadge = '<span style="background: #3b82f6; color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px;">Programado</span>';
+        else if (m.status === 'in_progress') estadoBadge = '<span style="background: #f59e0b; color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px;">En Curso</span>';
+        else if (m.status === 'finished') estadoBadge = '<span style="background: #10b981; color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px;">Finalizado</span>';
+        else estadoBadge = `<span style="background: #64748b; color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px;">${m.status}</span>`;
+
+        // EL BOTÓN MÁGICO: Solo se dibuja si el usuario tiene permiso (canDelete = true)
+        const actionBtn = m.canDelete 
+            ? `<button class="btn btn-danger btn-sm" onclick="deleteMatch(${m.id})">🗑️ Eliminar</button>` 
+            : `<span style="color: #64748b; font-size: 12px;">Sin acciones</span>`;
+
+        return `
+        <tr style="border-bottom: 1px solid #334155;">
+            <td style="padding: 12px; color: #f59e0b; font-weight: bold;">${m.tournamentName}</td>
+            <td style="padding: 12px; color: #38bdf8;">${m.localName}</td>
+            <td style="padding: 12px; color: #ef4444;">${m.awayName}</td>
+            <td style="padding: 12px;"><strong>${dateStr}</strong></td>
+            <td style="padding: 12px; color: #cbd5e1;">${m.location || 'Por definir'}</td>
+            <td style="padding: 12px;">${estadoBadge}</td>
+            <td style="padding: 12px; text-align: center; font-weight: bold; font-size: 16px;">${resultado}</td>
+            <td style="padding: 12px; text-align: center;">${actionBtn}</td>
+        </tr>
+        `;
+    }).join('');
+}
+
+// 3. LA FUNCIÓN PARA DESTRUIR EL PARTIDO
+async function deleteMatch(matchId) {
+    if (!confirm('¿Estás seguro de que deseas eliminar este partido? Esta acción no se puede deshacer.')) return;
+    
+    try {
+        await app.fetchAPI(`/matches/${matchId}/`, { method: 'DELETE' });
+        app.showAlert('Partido eliminado exitosamente', 'success');
+        loadCalendarMatches(); // Recarga la tabla al instante
+    } catch (error) {
+        console.error("Error al eliminar partido:", error);
+        app.showAlert('Error al eliminar el partido', 'danger');
+    }
+}
+
+function applyCalendarFilters() {
+    const sportFilter = document.getElementById('filterSport') ? document.getElementById('filterSport').value.toLowerCase() : '';
+    const tournamentFilter = document.getElementById('filterTournament') ? document.getElementById('filterTournament').value.toLowerCase() : '';
+    
+    const filteredMatches = allMatchesData.filter(match => {
+        const matchSport = match.sport.toLowerCase();
+        const matchTournament = match.tournamentName.toLowerCase();
+        
+        const passesSport = sportFilter === '' || matchSport.includes(sportFilter);
+        const passesTournament = tournamentFilter === '' || matchTournament.includes(tournamentFilter);
+        
+        return passesSport && passesTournament;
+    });
+
+    renderMatches(filteredMatches);
+}
+
+</script>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="footer-content">
+        <a href="terminos.html" class="footer-link">Términos y Condiciones</a>
+        <span class="footer-separator">|</span>
+        <a href="privacidad.html" class="footer-link">Privacidad</a>
+        <span class="footer-separator">|</span>
+        <a href="ayuda-logueado.html" class="footer-link">Soporte</a>
+        <span class="footer-separator">|</span>
+        <span class="footer-text">Copyright</span>
+        <span class="footer-separator">|</span>
+        <a href="index.html" class="footer-link">Troyan Legacy</a>
+    </div>
+</footer>
+
+</body>
+</html>

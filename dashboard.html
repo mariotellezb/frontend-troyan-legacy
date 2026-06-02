@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Gestión de Torneos</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div class="main-layout">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <img src="img/tl_letters.png" alt="TROYAN LEGACY" class="sidebar-logo">
+        </div>
+        <nav>
+            <ul class="sidebar-nav">
+                <li><a href="dashboard.html">📊 Dashboard</a></li>
+                <li><a href="torneos.html">🏅 Torneos</a></li>
+                <li><a href="equipos.html">👥 Equipos</a></li>
+                <li><a href="calendario.html">📅 Calendario</a></li>
+                <li><a href="resultados.html">📈 Resultados</a></li>
+                <li><a href="perfil.html">👤 Mi Perfil</a></li>
+                <li id="adminLink" class="hidden-element" style="display:none;"><a href="admin.html">⚙️ Administración</a></li>
+                <li><a href="ayuda-logueado.html">❓ Centro de Ayuda</a></li>
+            </ul>
+        </nav>
+        <div class="user-info">
+            <p id="userName" class="user-name-text"></p>
+            <p id="userRole" class="user-role-text"></p>
+            
+            <button id="themeToggleBtn" onclick="app.toggleTheme()" class="theme-toggle-btn">
+                ☀️ Modo Claro
+            </button>
+            
+            <button class="logout-btn" onclick="app.logout()">Cerrar Sesión</button>
+        </div>
+    </aside>
+
+    <div class="main-content">
+        <div class="header">
+            <div class="header-left">
+                <h1>Dashboard</h1>
+                <p id="welcomeMessage"></p>
+            </div>
+            <div class="header-right">
+                <span class="user-greeting" id="userGreeting">Hola, <span id="userNameHeader"></span></span>
+            </div>
+        </div>
+
+        <div class="content">
+            <div id="alert" class="alert"></div>
+
+            <div class="action-section">
+                <h2 class="action-title">¿Qué quieres hacer?</h2>
+                <div class="action-container">
+                    <div class="action-card left">
+                        <button class="action-btn" onclick="window.location.href='torneos.html'">
+                            <span class="action-icon">🎮</span>
+                            <span class="action-text">Unirse a un torneo</span>
+                        </button>
+                    </div>
+                    <div class="action-card right">
+                        <button class="action-btn" id="createTournamentBtn" onclick="window.location.href='torneos.html?action=new'">
+                            <span class="action-icon">🏆</span>
+                            <span class="action-text">Crear torneo</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>¡Bienvenido a la Plataforma de Gestión de Torneos!</h3>
+                <p>Aquí puedes administrar torneos, equipos, calendario y resultados de todas las competiciones.</p>
+            </div>
+
+            <div class="card-grid" id="statsGrid">
+                <div class="card-item">
+                    <h4>Torneos Activos</h4>
+                    <p class="stat-number text-blue" id="activeTournaments">0</p>
+                </div>
+                <div class="card-item">
+                    <h4>Equipos Registrados</h4>
+                    <p class="stat-number text-green" id="totalTeams">0</p>
+                </div>
+                <div class="card-item">
+                    <h4>Partidos Programados</h4>
+                    <p class="stat-number text-orange" id="totalMatches">0</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Torneos Recientes</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Deporte</th>
+                            <th>Inicio</th>
+                            <th>Fin</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recentTournamentsTable">
+                        <tr>
+                            <td colspan="6" class="empty-table-msg">Cargando torneos...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <h3>Próximos Partidos</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Torneo</th>
+                            <th>Equipo Local</th>
+                            <th>Equipo Visitante</th>
+                            <th>Fecha y Hora</th>
+                            <th>Ubicación</th>
+                        </tr>
+                    </thead>
+                    <tbody id="upcomingMatchesTable">
+                        <tr>
+                            <td colspan="5" class="empty-table-msg">Cargando partidos...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+    if (!app.checkAuth()) return;
+
+    const currentUser = app.currentUser;
+    if (currentUser) {
+        const firstName = (currentUser.name || currentUser.username || '').split(' ')[0];
+        document.getElementById('userNameHeader').textContent = firstName;
+
+        if (app.isAdmin()) {
+            const adminLink = document.getElementById('adminLink');
+            if(adminLink) adminLink.style.display = 'block';
+        }
+    }
+
+    try {
+        const [tournaments, teams, matches] = await Promise.all([
+            app.fetchAPI('/tournaments/'),
+            app.fetchAPI('/teams/'),
+            app.fetchAPI('/matches/')
+        ]);
+
+        loadStatistics(tournaments, teams, matches);
+        loadRecentTournaments(tournaments);
+        loadUpcomingMatches(matches, tournaments, teams);
+
+    } catch (error) {
+        console.error("Error al cargar el dashboard desde Django:", error);
+        app.showAlert("Error al cargar los datos del servidor", "danger");
+    }
+
+    app.initializeNavigation();
+    
+    document.addEventListener('click', function(e) {
+        const dropdown = document.getElementById('notificationsDropdown');
+        const btn = document.getElementById('notificationsBtn');
+        if (dropdown && btn && !dropdown.contains(e.target) && !btn.contains(e.target)) {
+            dropdown.classList.remove('active');
+        }
+    });
+});
+
+function loadStatistics(tournaments, teams, matches) {
+    const activeTournaments = tournaments.filter(t => t.status === 'active').length;
+
+    document.getElementById('activeTournaments').textContent = activeTournaments;
+    document.getElementById('totalTeams').textContent = teams.length;
+    document.getElementById('totalMatches').textContent = matches.length;
+}
+
+function loadRecentTournaments(tournaments) {
+    const tbody = document.getElementById('recentTournamentsTable');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+
+    if (tournaments.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-table-msg">No hay torneos registrados</td></tr>';
+        return;
+    }
+
+    const recent = tournaments.sort((a, b) => b.id - a.id).slice(0, 5);
+
+    recent.forEach(tournament => {
+        const row = document.createElement('tr');
+        const startDate = tournament.startDate ? app.formatDate(tournament.startDate) : 'N/A';
+        const endDate = tournament.endDate ? app.formatDate(tournament.endDate) : 'N/A';
+        const statusMap = { 'active': 'Activo', 'completed': 'Completado', 'cancelled': 'Cancelado' };
+        const statusEs = statusMap[tournament.status] || tournament.status;
+
+        row.innerHTML = `
+            <td>${tournament.name}</td>
+            <td>${tournament.sport}</td>
+            <td>${startDate}</td>
+            <td>${endDate}</td>
+            <td><span class="text-success">${statusEs}</span></td>
+            <td>
+                <button class="btn btn-secondary" onclick="window.location.href='torneos.html?id=${tournament.id}'">Ver Detalles</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function loadUpcomingMatches(matches, tournaments, teams) {
+    const tbody = document.getElementById('upcomingMatchesTable');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+
+    const scheduledMatches = matches.filter(m => m.status === 'scheduled').sort((a, b) => {
+        return new Date((a.date || '') + ' ' + (a.time || '')) - new Date((b.date || '') + ' ' + (b.time || ''));
+    });
+
+    if (scheduledMatches.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-table-msg">No hay partidos programados</td></tr>';
+        return;
+    }
+
+    scheduledMatches.slice(0, 5).forEach(match => {
+        const tournament = tournaments.find(t => t.id === match.tournament) || tournaments.find(t => t.id === match.tournamentId);
+        const homeTeam = teams.find(t => t.id === match.homeTeam) || teams.find(t => t.id === match.homeTeamId);
+        const awayTeam = teams.find(t => t.id === match.awayTeam) || teams.find(t => t.id === match.awayTeamId);
+
+        const row = document.createElement('tr');
+        
+        const dateStr = match.date ? app.formatDate(match.date) : 'Fecha N/A';
+        const timeStr = match.time ? match.time.substring(0,5) : 'Hora N/A';
+
+        row.innerHTML = `
+            <td>${tournament ? tournament.name : 'Torneo desconocido'}</td>
+            <td>${homeTeam ? homeTeam.name : 'Equipo desconocido'}</td>
+            <td>${awayTeam ? awayTeam.name : 'Equipo desconocido'}</td>
+            <td>${dateStr} ${timeStr}</td>
+            <td>${match.location || 'N/A'}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+</script>
+
+<footer class="footer">
+    <div class="footer-content">
+        <a href="terminos.html" class="footer-link">Términos y Condiciones</a>
+        <span class="footer-separator">|</span>
+        <a href="privacidad.html" class="footer-link">Privacidad</a>
+        <span class="footer-separator">|</span>
+        <a href="ayuda-logueado.html" class="footer-link">Soporte</a>
+        <span class="footer-separator">|</span>
+        <span class="footer-text">Copyright</span>
+        <span class="footer-separator">|</span>
+        <a href="index.html" class="footer-link">Troyan Legacy</a>
+    </div>
+</footer>
+
+</body>
+</html>

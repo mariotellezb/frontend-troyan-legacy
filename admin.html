@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administración - Gestión de Torneos</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div class="main-layout">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <img src="img/tl_letters.png" alt="TROYAN LEGACY" class="sidebar-logo">
+        </div>
+        <nav>
+            <ul class="sidebar-nav">
+                <li><a href="dashboard.html">📊 Dashboard</a></li>
+                <li><a href="torneos.html">🏅 Torneos</a></li>
+                <li><a href="equipos.html">👥 Equipos</a></li>
+                <li><a href="calendario.html">📅 Calendario</a></li>
+                <li><a href="resultados.html">📈 Resultados</a></li>
+                <li><a href="perfil.html">👤 Mi Perfil</a></li>
+                <li><a href="admin.html">⚙️ Administración</a></li>
+                <li><a href="ayuda-logueado.html">❓ Centro de Ayuda</a></li>
+            </ul>
+        </nav>
+        <div class="user-info">
+            <p id="userName" class="user-name-text"></p>
+            <p id="userRole" class="user-role-text"></p>
+            
+            <button id="themeToggleBtn" onclick="app.toggleTheme()" class="theme-toggle-btn">
+                ☀️ Modo Claro
+            </button>
+            <button class="logout-btn" onclick="app.logout()">Cerrar Sesión</button>
+        </div>
+    </aside>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>Panel de Administración (Conectado a BD)</h1>
+        </div>
+
+        <div class="content">
+            <div id="alert" class="alert"></div>
+
+            <div class="card-grid">
+                <div class="card-item">
+                    <h4>Total de Torneos</h4>
+                    <p style="font-size: 28px; color: #10b981; font-weight: bold;" id="totalTournamentsAdmin">0</p>
+                </div>
+                <div class="card-item">
+                    <h4>Total de Equipos</h4>
+                    <p style="font-size: 28px; color: #f59e0b; font-weight: bold;" id="totalTeamsAdmin">0</p>
+                </div>
+                <div class="card-item">
+                    <h4>Total de Partidos</h4>
+                    <p style="font-size: 28px; color: #8b5cf6; font-weight: bold;" id="totalMatchesAdmin">0</p>
+                </div>
+            </div>
+
+            <div class="admin-tabs">
+                <button class="admin-tab-btn active" onclick="switchTab('tournaments')">🏅 Torneos</button>
+                <button class="admin-tab-btn" onclick="switchTab('teams')">👨‍👩‍👧‍👦 Equipos</button>
+                <button class="admin-tab-btn" onclick="switchTab('reports')">📊 Reportes</button>
+                <button class="admin-tab-btn" onclick="switchTab('settings')">⚙️ Base de Datos</button>
+            </div>
+
+            <div id="tournaments-tab" class="tab-content active">
+                <div class="card">
+                    <h3>Gestión de Torneos</h3>
+                    <table class="responsive-table">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Deporte</th>
+                                <th>Inicio</th>
+                                <th>Fin</th>
+                                <th>Estado</th>
+                                <th>Equipos</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tournamentsAdminTable">
+                            <tr>
+                                <td colspan="7" style="text-align: center; color: #cbd5e1;">Cargando torneos...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="teams-tab" class="tab-content">
+                <div class="card">
+                    <h3>Gestión de Equipos</h3>
+                    <table class="responsive-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre del Equipo</th>
+                                <th>Miembros Totales</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="teamsAdminTable">
+                            <tr>
+                                <td colspan="4" style="text-align: center; color: #cbd5e1;">Cargando equipos...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="reports-tab" class="tab-content">
+                <div class="card">
+                    <h3>Reportes y Estadísticas del Servidor</h3>
+
+                    <div style="margin-bottom: 30px;">
+                        <h4 style="color: #38bdf8; margin-bottom: 15px;">Participación en Torneos</h4>
+                        <table class="responsive-table">
+                            <thead>
+                                <tr>
+                                    <th>Torneo</th>
+                                    <th>Equipos Inscritos</th>
+                                </tr>
+                            </thead>
+                            <tbody id="participationTable"></tbody>
+                        </table>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <h4 style="color: #38bdf8; margin-bottom: 15px;">Estadísticas de Partidos</h4>
+                        <div style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+                            <p style="margin-bottom: 8px;"><strong>Partidos Programados:</strong> <span id="scheduledMatches" style="color: #f59e0b; font-weight: bold; font-size: 18px;">0</span></p>
+                            <p style="margin-bottom: 8px;"><strong>Partidos En Curso:</strong> <span id="inProgressMatches" style="color: #38bdf8; font-weight: bold; font-size: 18px;">0</span></p>
+                            <p><strong>Partidos Finalizados:</strong> <span id="playedMatches" style="color: #10b981; font-weight: bold; font-size: 18px;">0</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="settings-tab" class="tab-content">
+                <div class="card">
+                    <h3>Administración Avanzada (Django)</h3>
+                    <p style="margin-bottom: 20px; color: var(--text-color);">Al estar conectados a una base de datos real (MySQL/SQLite), las funciones de eliminación masiva, respaldos de base de datos y gestión de usuarios y roles deben realizarse directamente desde el panel de seguridad de Django.</p>
+                    
+                    <div style="margin-bottom: 30px;">
+                        <h4 style="color: #38bdf8; margin-bottom: 15px;">Acciones de Servidor</h4>
+                        <div class="btn-group" style="flex-direction: column;">
+                            <a href="http://127.0.0.1:8000/admin/" target="_blank" class="btn btn-primary" style="text-align: center; margin-bottom: 15px; padding: 12px; font-size: 16px;">
+                                🛡️ Abrir Panel de Django Admin
+                            </a>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <h4 style="color: #38bdf8; margin-bottom: 15px;">Estado de la Conexión</h4>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr>
+                                <td style="padding: 8px 0; border-bottom: 1px solid var(--border-color);"><strong>Base de Datos:</strong></td>
+                                <td style="padding: 8px 0; border-bottom: 1px solid var(--border-color); color: #10b981;">Conectado (Django REST API)</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px 0; border-bottom: 1px solid var(--border-color);"><strong>URL del API:</strong></td>
+                                <td style="padding: 8px 0; border-bottom: 1px solid var(--border-color);">http://127.0.0.1:8000/api/</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+    if (!app.checkAuth()) return;
+    app.initializeNavigation();
+
+    // Bloquear si no es admin
+    if (!app.isAdmin()) {
+        window.location.href = 'dashboard.html';
+        return;
+    }
+
+    loadAdminData();
+});
+
+function switchTab(tabName) {
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.admin-tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(tabName + '-tab').classList.add('active');
+    event.target.classList.add('active');
+}
+
+// 🔥 CARGA TODOS LOS DATOS DESDE DJANGO API
+async function loadAdminData() {
+    try {
+        const [tournaments, teams, matches] = await Promise.all([
+            app.fetchAPI('/tournaments/').catch(() => []),
+            app.fetchAPI('/teams/').catch(() => []),
+            app.fetchAPI('/matches/').catch(() => [])
+        ]);
+
+        // 1. Estadísticas Generales (Sin Usuarios)
+        document.getElementById('totalTournamentsAdmin').textContent = tournaments.length;
+        document.getElementById('totalTeamsAdmin').textContent = teams.length;
+        document.getElementById('totalMatchesAdmin').textContent = matches.length;
+
+        // 2. Tablas
+        renderTournamentsTable(tournaments);
+        renderTeamsTable(teams);
+        
+        // 3. Reportes
+        generateReports(tournaments, matches);
+
+    } catch (error) {
+        app.showAlert('Error al conectar con la base de datos', 'danger');
+        console.error(error);
+    }
+}
+
+function renderTournamentsTable(tournaments) {
+    const tbody = document.getElementById('tournamentsAdminTable');
+    tbody.innerHTML = '';
+    
+    if(tournaments.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No hay torneos registrados.</td></tr>';
+        return;
+    }
+
+    tournaments.forEach(tournament => {
+        const teamsCount = tournament.teams ? tournament.teams.length : 0;
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${tournament.name}</td>
+            <td>${tournament.sport}</td>
+            <td>${app.formatDate(tournament.startDate || tournament.start_date)}</td>
+            <td>${app.formatDate(tournament.endDate || tournament.end_date)}</td>
+            <td><span style="color: #10b981; font-weight: bold;">${tournament.status}</span></td>
+            <td>${teamsCount}/${tournament.maxTeams || tournament.max_teams}</td>
+            <td>
+                <button class="btn btn-danger btn-sm" onclick="deleteTournamentAdmin(${tournament.id})">Eliminar</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function renderTeamsTable(teams) {
+    const tbody = document.getElementById('teamsAdminTable');
+    tbody.innerHTML = '';
+    
+    if(teams.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No hay equipos registrados.</td></tr>';
+        return;
+    }
+
+    teams.forEach(team => {
+        const membersCount = team.members ? team.members.length : 0;
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>#${team.id}</td>
+            <td><strong>${team.name}</strong></td>
+            <td>👥 ${membersCount} Jugadores</td>
+            <td>
+                <button class="btn btn-danger btn-sm" onclick="deleteTeamAdmin(${team.id})">Eliminar</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function generateReports(tournaments, matches) {
+    const participationTable = document.getElementById('participationTable');
+    participationTable.innerHTML = '';
+
+    tournaments.forEach(tournament => {
+        const teamsCount = tournament.teams ? tournament.teams.length : 0;
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${tournament.name}</td>
+            <td><span style="color: #38bdf8; font-weight: bold;">${teamsCount}</span> equipos</td>
+        `;
+        participationTable.appendChild(row);
+    });
+
+    const scheduledCount = matches.filter(m => m.status === 'scheduled').length;
+    const inProgressCount = matches.filter(m => m.status === 'in_progress').length;
+    const playedCount = matches.filter(m => m.status === 'finished' || m.status === 'played').length;
+
+    document.getElementById('scheduledMatches').textContent = scheduledCount;
+    document.getElementById('inProgressMatches').textContent = inProgressCount;
+    document.getElementById('playedMatches').textContent = playedCount;
+}
+
+async function deleteTournamentAdmin(id) {
+    if(!confirm('¿Estás seguro de eliminar este torneo? Se borrarán sus partidos.')) return;
+    try {
+        await app.fetchAPI(`/tournaments/${id}/`, { method: 'DELETE' });
+        app.showAlert('Torneo eliminado', 'success');
+        loadAdminData();
+    } catch (e) {
+        app.showAlert('Error al eliminar', 'danger');
+    }
+}
+
+async function deleteTeamAdmin(id) {
+    if(!confirm('¿Estás seguro de eliminar este equipo?')) return;
+    try {
+        await app.fetchAPI(`/teams/${id}/`, { method: 'DELETE' });
+        app.showAlert('Equipo eliminado', 'success');
+        loadAdminData();
+    } catch (e) {
+        app.showAlert('Error al eliminar', 'danger');
+    }
+}
+</script>
+
+<footer class="footer">
+    <div class="footer-content">
+        <a href="terminos.html" class="footer-link">Términos y Condiciones</a>
+        <span class="footer-separator">|</span>
+        <a href="privacidad.html" class="footer-link">Privacidad</a>
+        <span class="footer-separator">|</span>
+        <a href="ayuda-logueado.html" class="footer-link">Soporte</a>
+        <span class="footer-separator">|</span>
+        <span class="footer-text">Copyright</span>
+        <span class="footer-separator">|</span>
+        <a href="index.html" class="footer-link">Troyan Legacy</a>
+    </div>
+</footer>
+
+</body>
+</html>
