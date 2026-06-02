@@ -35,25 +35,25 @@
 }*/
 
 :root {
-    /* Recreación exacta de la imagen */
-    --bg-base: #e5e7eb; /* El fondo gris claro */
-    --bg-card: #ffffff; /* Las tarjetas en blanco puro */
-    --bg-hover: #f3f4f6;
-    --border-color: #d1d5db;
+    /* Fondos basados en el azul profundo de la UAQ */
+    --bg-base: #06111c; /* Fondo súper oscuro con un toque de azul */
+    --bg-card: #0b233f; /* El azul marino exacto de las tarjetas de la imagen */
+    --bg-hover: #133254;
+    --border-color: #1c426b;
     
     /* Acentos */
-    --accent-primary: #0b233f; /* El azul marino institucional para botones y encabezados */
-    --accent-hover: #133254;
-    --accent-secondary: #4b5563;
+    --accent-primary: #5ca1e6; /* Un azul más claro para que los botones destaquen */
+    --accent-hover: #82bbf2;
+    --accent-secondary: #e5e7eb; /* El gris claro de la imagen */
     
-    /* Textos (invertidos porque el fondo es claro) */
-    --text-main: #111827; 
-    --text-muted: #6b7280;
+    /* Textos */
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
     
     /* Estados */
-    --success: #059669;
-    --danger: #dc2626;
-    --warning: #d97706;
+    --success: #10b981;
+    --danger: #ef4444;
+    --warning: #f59e0b;
 }
 
 
