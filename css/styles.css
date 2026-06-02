@@ -37,18 +37,22 @@
 /* OPCIÓN 3: Rendimiento y Carbono (Negro Mate y Rojo) - DESACTIVADO 
    (Para usarlo, borra los /* de arriba y abajo de este bloque, y pónselos a la Opción 2)*/
 :root {
-    --bg-base: #0d0d0d;
-    --bg-card: #141414;
-    --bg-hover: #222222;
-    --border-color: #333333;
+    /* Fondos basados en el azul profundo de la UAQ */
+    --bg-base: #06111c; /* Fondo súper oscuro con un toque de azul */
+    --bg-card: #0b233f; /* El azul marino exacto de las tarjetas de la imagen */
+    --bg-hover: #133254;
+    --border-color: #1c426b;
     
-    --accent-primary: #dc2626;
-    --accent-hover: #ef4444;
-    --accent-secondary: #fbbf24;
+    /* Acentos hola */
+    --accent-primary: #5ca1e6; /* Un azul más claro para que los botones destaquen */
+    --accent-hover: #82bbf2;
+    --accent-secondary: #e5e7eb; /* El gris claro de la imagen */
     
-    --text-main: #ffffff;
-    --text-muted: #a3a3a3;
+    /* Textos */
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
     
+    /* Estados */
     --success: #10b981;
     --danger: #ef4444;
     --warning: #f59e0b;
