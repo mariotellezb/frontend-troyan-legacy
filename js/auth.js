@@ -1,5 +1,5 @@
 // ======================== LOGIN (CONECTADO A DJANGO) ========================
-var API_BASE_URL = 'https://backend-troyan-legacy.onrender.com/api/login/';
+var API_BASE_URL = 'https://backend-troyan-legacy.onrender.com/api/';
 
 const loginForm = document.getElementById("loginForm");
 
@@ -16,13 +16,14 @@ if (loginForm) {
         }
 
         try {
-            fetch('https://backend-troyan-legacy.onrender.com/api/login/', {
+            const response = await fetch('https://backend-troyan-legacy.onrender.com/api/login/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
             });
 
             const data = await response.json();
+            // ... el resto sigue igual
 
             if (data.success) {
                 // Guardamos la sesión local para que app.js la detecte
