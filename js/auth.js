@@ -1,5 +1,5 @@
 // ======================== LOGIN (CONECTADO A DJANGO) ========================
-var API_BASE_URL = 'https://backend-troyan-legacy.onrender.com/api/';
+var API_BASE_URL = 'https://backend-troyan-legacy.onrender.com/api';
 
 const loginForm = document.getElementById("loginForm");
 
