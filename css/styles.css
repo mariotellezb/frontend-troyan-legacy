@@ -15,7 +15,7 @@
    VARIABLES DE COLOR (¡Cambia tu tema desde aquí!)
    ========================================================================== */
 
-/* OPCIÓN 2: Torneo Digital (Cyan Eléctrico y Neón) - ACTIVADO */
+/* OPCIÓN 2: Torneo Digital (Cyan Eléctrico y Neón) - ACTIVADO 
 :root {
     --bg-base: #0a0f1c;
     --bg-card: #111827;
@@ -32,10 +32,10 @@
     --success: #10b981;
     --danger: #ef4444;
     --warning: #f59e0b;
-}
+}*/
 
 /* OPCIÓN 3: Rendimiento y Carbono (Negro Mate y Rojo) - DESACTIVADO 
-   (Para usarlo, borra los /* de arriba y abajo de este bloque, y pónselos a la Opción 2)
+   (Para usarlo, borra los /* de arriba y abajo de este bloque, y pónselos a la Opción 2)*/
 :root {
     --bg-base: #0d0d0d;
     --bg-card: #141414;
@@ -53,7 +53,7 @@
     --danger: #ef4444;
     --warning: #f59e0b;
 }
-*/
+
 
 /* ==========================================================================
    1. GLOBALES Y RESETEO
