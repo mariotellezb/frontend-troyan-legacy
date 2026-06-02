@@ -174,27 +174,25 @@
 
 <script src="js/app.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    // Verificamos si el usuario es administrador
-    if (window.app && window.app.isAdmin()) {
-        const adminBox = document.getElementById('admin-panel-box');
-        if (adminBox) {
-            adminBox.style.display = 'block'; // Lo mostramos solo si es admin
-        }
-    }
-});
-
-document.addEventListener('DOMContentLoaded', async function() {
+document.addEventListener('DOMContentLoaded', async () => {
+    // 1. Verificación básica de sesión
     if (!app.checkAuth()) return;
+    
+    // 2. Inicialización común
     app.initializeNavigation();
 
-    // Bloquear si no es admin
-    if (!app.isAdmin()) {
-        window.location.href = 'dashboard.html';
-        return;
-    }
+    // 3. Lógica de Administración (Ocultar/Mostrar elementos)
+    if (app.isAdmin()) {
+        // Mostrar elementos de admin
+        const adminBox = document.getElementById('admin-panel-box');
+        if (adminBox) adminBox.style.display = 'block';
 
-    loadAdminData();
+        // Cargar los datos específicos del admin
+        loadAdminData();
+    } else {
+        // 4. Si no es admin, redirigir inmediatamente
+        window.location.href = 'dashboard.html';
+    }
 });
 
 function switchTab(tabName) {
